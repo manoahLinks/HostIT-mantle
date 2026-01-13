@@ -14,7 +14,9 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { GiPadlock } from "react-icons/gi";
 import { useContractRead } from "@/hooks/useContract";
 import { formatEther } from "viem";
-import { useMantleDeposit } from '@/hooks/useDepositMntFromL1';
+import { useRegisterForEvent } from "@/hooks/useRegisterForEvent";
+import { useRegistrationForm } from "@/hooks/useRegistrationForm";
+import { toast } from "sonner";
 
 type EventJson = {
   platform: string;
@@ -30,31 +32,49 @@ const Page = () => {
   const router = useRouter();
   const { id } = useParams();
   const [eventJson, setEventJson] = useState<EventJson | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const [depositAmount, setDepositAmount] = useState('1');
-  const [withdrawAmount, setWithdrawAmount] = useState('0.1');
-
+  // Registration hooks
+  const registerMutation = useRegisterForEvent();
   const {
-    isLoading,
-    status,
-    txHash,
-    depositMNT,
-  } = useMantleDeposit({
-    l1ChainId: Number(process.env.NEXT_PUBLIC_L1_CHAINID),
-    l2ChainId: Number(process.env.NEXT_PUBLIC_L2_CHAINID),
-    l1RpcUrl: process.env.NEXT_PUBLIC_L1_RPC!,
-    l2RpcUrl: process.env.NEXT_PUBLIC_L2_RPC!,
-    privateKey: process.env.NEXT_PUBLIC_PRIV_KEY as `0x${string}`,
-    l1MntAddress: process.env.NEXT_PUBLIC_L1_MNT as `0x${string}`,
-    l2MntAddress: process.env.NEXT_PUBLIC_L2_MNT as `0x${string}`,
-  });
+    formData,
+    errors,
+    touched,
+    handleChange,
+    handleBlur,
+    validateForm,
+    resetForm,
+  } = useRegistrationForm();
 
-  const handleDeposit = async () => {
+  // Registration handler
+  const handleRegister = async () => {
+    // Validate form
+    if (!validateForm()) {
+      toast.error("Please fix form errors");
+      return;
+    }
+
+    // Check if we have required data
+    if (!eventJson?.ticketId || !eventJson?.name || !id) {
+      toast.error("Event data not loaded");
+      return;
+    }
+
     try {
-      const hash = await depositMNT(depositAmount);
-      alert(`Deposit successful! Hash: ${hash}`);
-    } catch (error) {
-      alert('Deposit failed');
+      await registerMutation.mutateAsync({
+        ...formData,
+        eventId: id as string,
+        eventName: eventJson.name,
+        ticketId: Number(eventJson.ticketId),
+        role: "attendee",
+      });
+
+      toast.success("Successfully registered for the event!");
+      resetForm();
+      setIsDialogOpen(false);
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      toast.error(error?.message || "Registration failed. Please try again.");
     }
   };
 
@@ -146,33 +166,121 @@ const Page = () => {
             <div className="bg-subsidiary flex justify-center items-center rounded-full h-12 w-12 2xl:h-14 2xl:w-14">
               <IoIosShareAlt className="w-[24px] h-[24px] 2xl:w-[30px] 2xl:h-[30px]" color="#FFFFFF" />
             </div>
-            <Dialog>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-subsidiary hover:bg-white hover:text-subsidiary text-white">
                 Register/Buy
               </DialogTrigger>
 
-              <Button onClick={handleDeposit} className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-subsidiary hover:bg-white hover:text-subsidiary text-white">
-                Buy with mnt from L1
-              </Button>
-
-              <DialogContent className="border bg-principal border-subsidiary rounded-3xl p-0">
+              <DialogContent className="border bg-principal border-subsidiary rounded-3xl p-0 max-w-md">
                 <div className="p-8 rounded-t-3xl bg-subsidiary flex justify-center items-center">
                   <GiPadlock color="#ffffff" size={64} />
                 </div>
-                <div className="p-6 flex flex-col justify-center items-center gap-4">
-                  <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#007CFA] from-30% to-white to-95% bg-clip-text text-transparent">
+                
+                <div className="p-6 flex flex-col gap-4">
+                  <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#007CFA] from-30% to-white to-95% bg-clip-text text-transparent text-center">
                     {isFree
-                      ? "This ticket is free"
-                      : `This ticket costs ${feeEthStr} ETH`}
+                      ? "Register for Free Event"
+                      : `Register - ${feeEthStr} ETH`}
                   </h1>
+
+                  {/* Registration Form */}
+                  <div className="space-y-4">
+                    {/* Name Field */}
+                    <div>
+                      <label className="block text-white text-sm font-medium mb-2">
+                        Name *
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        onBlur={() => handleBlur("name")}
+                        placeholder="Enter your name"
+                        className={`w-full bg-transparent border ${
+                          errors.name && touched.name
+                            ? "border-red-400"
+                            : "border-white/60"
+                        } h-12 text-base p-4 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/80`}
+                      />
+                      {errors.name && touched.name && (
+                        <p className="text-red-400 text-sm mt-1">{errors.name}</p>
+                      )}
+                    </div>
+
+                    {/* Email Field */}
+                    <div>
+                      <label className="block text-white text-sm font-medium mb-2">
+                        Email *
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        onBlur={() => handleBlur("email")}
+                        placeholder="Enter your email"
+                        className={`w-full bg-transparent border ${
+                          errors.email && touched.email
+                            ? "border-red-400"
+                            : "border-white/60"
+                        } h-12 text-base p-4 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/80`}
+                      />
+                      {errors.email && touched.email && (
+                        <p className="text-red-400 text-sm mt-1">{errors.email}</p>
+                      )}
+                    </div>
+
+                    {/* X Handle Field (Optional) */}
+                    <div>
+                      <label className="block text-white text-sm font-medium mb-2">
+                        X Handle (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        name="xhandle"
+                        value={formData.xhandle}
+                        onChange={handleChange}
+                        placeholder="@username"
+                        className="w-full bg-transparent border border-white/60 h-12 text-base p-4 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/80"
+                      />
+                    </div>
+
+                    {/* Newsletter Checkbox */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        name="agreeToNewsletter"
+                        id="newsletter"
+                        checked={formData.agreeToNewsletter}
+                        onChange={handleChange}
+                        className="w-4 h-4 rounded border-white/60 bg-transparent"
+                      />
+                      <label htmlFor="newsletter" className="text-white text-sm">
+                        Subscribe to newsletter
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
                   <Button
-                    className="text-sm sm:text-base h-12 w-48 font-semibold bg-subsidiary hover:bg-white hover:text-subsidiary rounded-xl"
-                    onClick={() => {
-                      router.push("/attendee-login");
-                    }}
+                    className="text-sm sm:text-base h-12 w-full font-semibold bg-subsidiary hover:bg-white hover:text-subsidiary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={handleRegister}
+                    disabled={registerMutation.isPending}
                   >
-                    Buy now
+                    {registerMutation.isPending
+                      ? "Processing..."
+                      : isFree
+                      ? "Register Now"
+                      : "Buy Ticket"}
                   </Button>
+
+                  {/* Status Messages */}
+                  {registerMutation.isPending && (
+                    <p className="text-white/70 text-sm text-center">
+                      Please confirm the transaction in your wallet...
+                    </p>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>
