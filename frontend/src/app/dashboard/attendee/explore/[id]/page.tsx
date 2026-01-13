@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { GiPadlock } from "react-icons/gi";
 import { useContractRead } from "@/hooks/useContract";
 import { formatEther } from "viem";
+import { useMantleDeposit } from '@/hooks/useDepositMntFromL1';
 
 type EventJson = {
   platform: string;
@@ -29,6 +30,35 @@ const Page = () => {
   const router = useRouter();
   const { id } = useParams();
   const [eventJson, setEventJson] = useState<EventJson | null>(null);
+
+  const [depositAmount, setDepositAmount] = useState('1');
+  const [withdrawAmount, setWithdrawAmount] = useState('0.1');
+
+  const {
+    isLoading,
+    status,
+    txHash,
+    depositMNT,
+  } = useMantleDeposit({
+    l1ChainId: Number(process.env.NEXT_PUBLIC_L1_CHAINID),
+    l2ChainId: Number(process.env.NEXT_PUBLIC_L2_CHAINID),
+    l1RpcUrl: process.env.NEXT_PUBLIC_L1_RPC!,
+    l2RpcUrl: process.env.NEXT_PUBLIC_L2_RPC!,
+    privateKey: process.env.NEXT_PUBLIC_PRIV_KEY as `0x${string}`,
+    l1MntAddress: process.env.NEXT_PUBLIC_L1_MNT as `0x${string}`,
+    l2MntAddress: process.env.NEXT_PUBLIC_L2_MNT as `0x${string}`,
+  });
+
+  const handleDeposit = async () => {
+    try {
+      const hash = await depositMNT(depositAmount);
+      alert(`Deposit successful! Hash: ${hash}`);
+    } catch (error) {
+      alert('Deposit failed');
+    }
+  };
+
+  // -----------------------------------------------------
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -120,6 +150,11 @@ const Page = () => {
               <DialogTrigger className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-subsidiary hover:bg-white hover:text-subsidiary text-white">
                 Register/Buy
               </DialogTrigger>
+
+              <Button onClick={handleDeposit} className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-subsidiary hover:bg-white hover:text-subsidiary text-white">
+                Buy with mnt from L1
+              </Button>
+
               <DialogContent className="border bg-principal border-subsidiary rounded-3xl p-0">
                 <div className="p-8 rounded-t-3xl bg-subsidiary flex justify-center items-center">
                   <GiPadlock color="#ffffff" size={64} />

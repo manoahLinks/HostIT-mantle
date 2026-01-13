@@ -71,7 +71,7 @@ export const useEventForm = (opts?: { onValidSubmit?: (data: EventFormData) => v
 
   // Watch for contract transaction status
   const { isLoading: isConfirming, isSuccess: isContractSuccess } = useWaitForTransactionReceipt({
-    hash: contractTxHash,
+    // hash: contractTxHash,
   });
 
   const handleInputChange = (
@@ -434,7 +434,7 @@ export const useEventForm = (opts?: { onValidSubmit?: (data: EventFormData) => v
     isSubmitting,
     submitError,
     submitSuccess,
-    contractTxHash,
+    // contractTxHash,
     isCreatingContract,
     isConfirming,
     isContractSuccess,

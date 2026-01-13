@@ -1,19 +1,16 @@
 import { createPublicClient, createWalletClient, http, custom, type Chain } from "viem";
-import { lisk, liskSepolia, base, baseSepolia } from "viem/chains";
+import { mantleSepoliaTestnet } from "viem/chains";
 
-const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://rpc.lisk.com";
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "https://rpc.sepolia.mantle.xyz";
 
-type SupportedChainName = "lisk" | "sepolia-lisk" | "base" | "basesepolia";
+type SupportedChainName = 'mantleSepoliaTestnet';
 
 const CHAIN_MAP: Record<SupportedChainName, Chain> = {
-  lisk,
-  "sepolia-lisk": liskSepolia,
-  base,
-  basesepolia: baseSepolia,
+  mantleSepoliaTestnet
 };
 
-const selectedChainName = (process.env.NEXT_PUBLIC_CHAIN?.toLowerCase() as SupportedChainName) || "lisk";
-export const SELECTED_CHAIN = CHAIN_MAP[selectedChainName] ?? lisk;
+const selectedChainName = (process.env.NEXT_PUBLIC_CHAIN?.toLowerCase() as SupportedChainName) || "mantleSepoliaTestnet";
+export const SELECTED_CHAIN = CHAIN_MAP[selectedChainName] ?? mantleSepoliaTestnet;
 
 export const publicClient = createPublicClient({
   chain: SELECTED_CHAIN,

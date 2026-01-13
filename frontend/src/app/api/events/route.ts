@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       !description ||
       !organizer_name ||
       !event_type ||
-      !event_category ||
+      // !event_category ||
       !location ||
       !schedule
     ) {
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+
     // Create the event in the database
     const event = await Event.create({
       name,
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
       description,
       organizer_name,
       event_type,
-      event_category,
+      event_category: 'free',
       location,
       schedule,
     });

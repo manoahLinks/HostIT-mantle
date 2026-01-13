@@ -111,7 +111,6 @@ export const fetchEvents = async (): Promise<GetEventsResponse> => {
     headers: {
       "Content-Type": "application/json",
     },
-    cache: "no-store", // Don't cache to always get fresh data
   });
 
   if (!response.ok) {

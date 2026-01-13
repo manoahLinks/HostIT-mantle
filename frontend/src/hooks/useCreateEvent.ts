@@ -54,7 +54,7 @@ export function useCreateEvent() {
 
       const startTime = toUnixSeconds(input.startDateIso);
       const endTime = toUnixSeconds(input.endDateIso);
-      const purchaseStartTime = startTime;
+      const purchaseStartTime = 0;
       const maxTickets = BigInt(input.ticketQuantity);
       const maxTicketsPerUser = BigInt(input.maxTicketsPerUser ?? 1);
       const isFree = Number(input.ticketPriceEth) === 0;

@@ -45,6 +45,7 @@ const Page = () => {
         const res = await fetch("/api/events", { cache: "no-store" });
         if (!res.ok) throw new Error("Failed to fetch events");
         const data = await res.json();
+        console.log(data)
         setEvents(data.events ?? []);
       } catch (err: any) {
         toast.error(err.message || "Failed to load events");

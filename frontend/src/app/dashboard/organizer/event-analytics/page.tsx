@@ -17,24 +17,6 @@ const Page = (props: Props) => {
 
   // Fetch events from API
   useEffect(() => {
-    const loadEvents = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const response = await fetchEvents();
-        setEvents(response.events);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load events");
-        console.error("Error fetching events:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadEvents();
-  }, []);
-
-  useEffect(() => {
     const checkScreenSize = () => {
       const is2XLScreen = window.innerWidth >= 1536;
       setIs2XL(is2XLScreen);
@@ -46,6 +28,33 @@ const Page = (props: Props) => {
     window.addEventListener("resize", checkScreenSize);
     return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const is2XLScreen = window.innerWidth >= 1536;
+      const newEventsPerPage = is2XLScreen ? 8 : 6;
+      
+      // Only update state if values actually changed to avoid unnecessary re-renders
+      setIs2XL(prev => (prev !== is2XLScreen ? is2XLScreen : prev));
+      setEventsPerPage(prev => (prev !== newEventsPerPage ? newEventsPerPage : prev));
+    };
+
+    checkScreenSize();
+
+    // Debounce resize to avoid excessive calculations during window dragging
+    let timeoutId: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(checkScreenSize, 150);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
 
   useEffect(() => {
     const newTotalPages = Math.ceil(events.length / eventsPerPage);

@@ -14,6 +14,7 @@ import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
 import Link from "next/link";
 import { MdEventBusy } from "react-icons/md";
 import { BsStars } from "react-icons/bs";
+import axios from 'axios';
 
 const ReactQuill = dynamic(() => import("react-quill"), {
   ssr: false,
@@ -33,7 +34,7 @@ const Page = () => {
     isSubmitting,
     submitError,
     submitSuccess,
-    contractTxHash,
+    // contractTxHash,
     isCreatingContract,
     isConfirming,
     isContractSuccess,
@@ -49,34 +50,34 @@ const Page = () => {
     handleSubmit,
   } = useEventForm({
     onValidSubmit: async (data) => {
+      const formData = new FormData();
       const firstTicket = data.ticketTypes[0];
       try {
         // Upload image to IPFS if it's a data URL
-        let imageCid = "";
-        if (data.eventImage && data.eventImage.startsWith("data:")) {
-          const upRes = await fetch("/api/ipfs/upload", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageDataUrl: data.eventImage, name: data.eventName || "event-image" }),
-          });
-          if (!upRes.ok) {
-            const msg = await upRes.text();
-            throw new Error(`Failed to upload image to IPFS: ${msg}`);
+        const handleUpload = async () => {
+          formData.append("file", data.eventImage);
+          const response = await axios.post(
+            "https://api.pinata.cloud/pinning/pinFileToIPFS",
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+                Authorization: `Bearer ${process.env.NEXT_PUBLIC_PINATA_JWT}`,
+              },
+            }
+          );
+          if (response) {
+            console.log(response)
+            // setSuccessfulResponse(response.data.IpfsHash);
+            // setHasUploaded(true);
           }
-          const up = await upRes.json();
-          imageCid = up.cid;
-        } else if (data.eventImage && data.eventImage.startsWith("ipfs://")) {
-          imageCid = data.eventImage.replace("ipfs://", "");
-        } else if (data.eventImage && /\/ipfs\//.test(data.eventImage)) {
-          const m = data.eventImage.match(/\/ipfs\/([^/?]+)/);
-          imageCid = m?.[1] ?? data.eventImage;
-        } else {
-          imageCid = data.eventImage;
-        }
+        };
+
+        // await handleUpload()
 
         await createEventMutation.mutateAsync({
           name: data.eventName,
-          image: imageCid,
+          image: "imageCid",
           description: data.description,
           organizer_name: data.organizer,
           event_type: data.eventType,
@@ -167,7 +168,7 @@ const Page = () => {
           <h3 className="text-lg font-bold text-white">Pick a Location</h3>
           <div
             className="h-64 w-full sm:w-64 md:h-80 md:w-80 relative cursor-pointer"
-            onClick={openLocationPicker}
+            // onClick={openLocationPicker}
           >
             <img
               src="/pick-location.png"
@@ -585,7 +586,7 @@ const Page = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-white">Pick a Location</h2>
               <button
-                onClick={closeLocationPicker}
+                // onClick={closeLocationPicker}
                 className="text-white/60 hover:text-white transition-colors"
               >
                 <X size={24} />
@@ -632,13 +633,13 @@ const Page = () => {
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
                 <Button
-                  onClick={closeLocationPicker}
+                  // onClick={closeLocationPicker}
                   className="flex-1 bg-white/10 hover:bg-white/20 text-white"
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => selectLocation(formData.location)}
+                  // onClick={() => selectLocation(formData.location)}
                   className="flex-1 bg-subsidiary hover:bg-subsidiary/80 text-white"
                   disabled={!formData.location.trim()}
                 >
