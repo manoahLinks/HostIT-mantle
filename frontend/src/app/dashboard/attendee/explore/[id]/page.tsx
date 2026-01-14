@@ -18,6 +18,7 @@ import { useRegisterForEvent } from "@/hooks/useRegisterForEvent";
 import { useRegistrationForm } from "@/hooks/useRegistrationForm";
 import { toast } from "sonner";
 import { useMantleDeposit } from "@/hooks/useDepositMntFromL1";
+import { useMantleWithdrawal } from '@/hooks/useWithdrawMntToL1';
 
 type EventJson = {
   platform: string;
@@ -81,15 +82,15 @@ const Page = () => {
 
   // Mantle deposit hook
   const { depositMNT, step, isLoading: isBridging } = useMantleDeposit({
-    l1ChainId: Number(process.env.NEXT_PUBLIC_L1_CHAINID),
-    l2ChainId: Number(process.env.NEXT_PUBLIC_L2_CHAINID),
-    l1RpcUrl: process.env.NEXT_PUBLIC_L1_RPC!,
-    l2RpcUrl: process.env.NEXT_PUBLIC_L2_RPC!,
-    l1MntAddress: process.env.NEXT_PUBLIC_L1_MNT as `0x${string}`,
-    l2MntAddress: process.env.NEXT_PUBLIC_L2_MNT as `0x${string}`,
+    l1ChainId: 11155111,
+    l2ChainId: 5003,
+    l1RpcUrl: "https://1rpc.io/sepolia",
+    l2RpcUrl: "https://rpc.sepolia.mantle.xyz",
+    l1MntAddress: "0x65e37B558F64E2Be5768DB46DF22F93d85741A9E" as `0x${string}`,
+    l2MntAddress: "0x0000000000000000000000000000000000000000" as `0x${string}`,
   });
 
-  // Bridge and purchase handler
+  // Bridge and purchase handler Mnt l1 - l2
   const handleBridgeAndPurchase = async () => {
     if (!feeEthStr || isFree) {
       toast.error("Cannot bridge for free events");
@@ -100,6 +101,28 @@ const Page = () => {
       toast.info("Starting MNT bridge from L1 to L2...");
       await depositMNT(feeEthStr);
       toast.success("Bridge complete! You can now purchase the ticket.");
+    } catch (error: any) {
+      console.error("Bridge error:", error);
+      // Error toast already handled by the hook
+    }
+  };
+
+  // Mantle withdraw hook
+  const {withdrawMNT, step: withdrawStep, isLoading: isWithdrawing} = useMantleWithdrawal({
+    l1ChainId: 11155111,
+    l2ChainId: 5003,
+    l1RpcUrl: "https://1rpc.io/sepolia",
+    l2RpcUrl: "https://rpc.sepolia.mantle.xyz",
+    l1MntAddress: "0x65e37B558F64E2Be5768DB46DF22F93d85741A9E" as `0x${string}`,
+    l2MntAddress: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+  }) 
+
+  // bridge Mnt from l2 to L1
+  const handleBridgeMntL2ToL1 = async () => {
+    try {
+      toast.info("Starting MNT bridge from L2 to L1...");
+      await withdrawMNT(feeEthStr);
+      toast.success("Bridge complete!");
     } catch (error: any) {
       console.error("Bridge error:", error);
       // Error toast already handled by the hook
@@ -333,6 +356,13 @@ const Page = () => {
                 />
               </div>
             )}
+
+            <Button
+                onClick={handleBridgeMntL2ToL1}
+                className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isWithdrawing ? `${withdrawStep.message}...` : "Purchase with MNT from L2"}
+              </Button>
           </div>
 
           {/* Map */}
