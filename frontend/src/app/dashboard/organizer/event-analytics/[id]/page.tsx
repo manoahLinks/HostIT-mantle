@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { GoDotFill } from "react-icons/go";
 import { useParams, useRouter } from "next/navigation";
@@ -8,7 +8,6 @@ import TicketPoap from "@/components/dashboard/TicketPoap";
 import { IoIosShareAlt } from "react-icons/io";
 import { Button } from "@/components/ui/button";
 import GooMap from "@/components/map";
-import { allEvents } from "@/components/data";
 import { convertDateFormat } from "@/lib/utils";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { GiPadlock } from "react-icons/gi";
@@ -24,12 +23,37 @@ import { MdMoveToInbox, MdOutlineQrCodeScanner } from "react-icons/md";
 import { Input } from "@/components/ui/input";
 import { MdAnalytics } from "react-icons/md";
 import { LucideImport } from "lucide-react";
+import { Event } from "@/lib/eventApi";
+import { toast } from "sonner";
 
 const Page = () => {
   const router = useRouter();
   const { id } = useParams();
   const [uploadImage, setUploadImage] = React.useState(true);
-  const currentEvent = allEvents.find((event) => event.id === Number(id));
+  const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch event data from API
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        setIsLoading(true);
+        const res = await fetch(`/api/events/${id}`, { cache: "no-store" });
+        if (!res.ok) throw new Error("Failed to fetch event");
+        const data = await res.json();
+        setCurrentEvent(data.event);
+      } catch (err) {
+        console.error("Error fetching event:", err);
+        toast.error("Failed to load event details");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchEvent();
+    }
+  }, [id]);
 
   return (
     <Tabs defaultValue="details" className="w-full">
@@ -97,44 +121,98 @@ const Page = () => {
 
         {/* Details Tab Content */}
         <TabsContent value="details" className="min-h-[82vh]">
-          <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 my-4">
-            {/* Left Column - Event Image and Description */}
-            <div className="w-full lg:w-2/3 relative">
-              <img
-                src="/event-image.png"
-                alt="event-image"
-                className="w-full rounded-3xl h-48 sm:h-56 2xl:h-64 object-cover"
-              />
-
-              <div className="absolute top-4 left-4 px-3 sm:px-4 py-1 rounded-full font-semibold text-sm sm:text-base z-10 border-2 border-white bg-[#13193980] text-white">
-                {currentEvent?.isFree ? "Free" : "Paid"}
+          {isLoading ? (
+            <div className="flex justify-center items-center min-h-[400px]">
+              <div className="flex flex-col items-center gap-4">
+                <svg
+                  className="animate-spin h-12 w-12 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                <p className="text-white text-lg">Loading event...</p>
               </div>
-
-              <div className="my-6 sm:my-8 2xl:my-10 border-2 border-subsidiary rounded-full w-full max-w-xs sm:max-w-sm lg:max-w-md 2xl:w-96 flex justify-center items-center h-12 2xl:h-14 mx-auto lg:mx-0">
-                <h1 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-[#007CFA] from-30% to-white to-95% bg-clip-text text-transparent uppercase">
-                  Description
-                </h1>
-              </div>
-
-              <p className="text-white text-base sm:text-lg 2xl:text-xl leading-relaxed">
-                {currentEvent?.description}
-              </p>
             </div>
+          ) : !currentEvent ? (
+            <div className="flex justify-center items-center min-h-[400px]">
+              <p className="text-white text-xl">Event not found</p>
+            </div>
+          ) : (
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-12 my-4">
+              {/* Left Column - Event Image and Description */}
+              <div className="w-full lg:w-2/3 relative">
+                <img
+                  src={currentEvent.image ? `https://ipfs.io/ipfs/${currentEvent.image}` : "/event-image.png"}
+                  alt="event-image"
+                  className="w-full rounded-3xl h-48 sm:h-56 2xl:h-64 object-cover"
+                />
+
+                <div className="absolute top-4 left-4 px-3 sm:px-4 py-1 rounded-full font-semibold text-sm sm:text-base z-10 border-2 border-white bg-[#13193980] text-white">
+                  {currentEvent.event_category?.toLowerCase() === "free" ? "Free" : "Paid"}
+                </div>
+
+                <div className="my-6 sm:my-8 2xl:my-10 border-2 border-subsidiary rounded-full w-full max-w-xs sm:max-w-sm lg:max-w-md 2xl:w-96 flex justify-center items-center h-12 2xl:h-14 mx-auto lg:mx-0">
+                  <h1 className="text-lg sm:text-xl font-semibold bg-gradient-to-r from-[#007CFA] from-30% to-white to-95% bg-clip-text text-transparent uppercase">
+                    Description
+                  </h1>
+                </div>
+
+                <div
+                  className="text-white text-base sm:text-lg 2xl:text-xl leading-relaxed prose prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: currentEvent.description || '' }}
+                />
+              </div>
 
             {/* Right Column - Event Details */}
             <div className="w-full lg:w-1/3 flex flex-col gap-4 sm:gap-6 mb-14 mb:mb-0">
               {/* Event Title and Date */}
               <div>
                 <h1 className="text-xl sm:text-2xl 2xl:text-3xl font-semibold bg-gradient-to-r from-[#007CFA] from-30% to-white to-95% bg-clip-text text-transparent">
-                  {currentEvent?.name}
+                  {currentEvent.name}
                 </h1>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start sm:items-center mt-2">
                   <p className="uppercase text-sm sm:text-base 2xl:text-lg text-white">
-                    {convertDateFormat(currentEvent?.date as string)}
+                    {currentEvent.start_date
+                      ? new Date(currentEvent.start_date).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric"
+                        })
+                      : currentEvent.createdAt
+                      ? new Date(currentEvent.createdAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric"
+                        })
+                      : "TBD"
+                    }
                   </p>
                   <GoDotFill className="text-white text-xl hidden sm:block" />
                   <p className="uppercase text-sm sm:text-base 2xl:text-lg text-white">
-                    {currentEvent?.time}
+                    {currentEvent.start_date
+                      ? new Date(currentEvent.start_date).toLocaleTimeString("en-US", {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true
+                        })
+                      : currentEvent.schedule && currentEvent.schedule.length > 0
+                      ? currentEvent.schedule[0].start_time
+                      : "TBD"
+                    }
                   </p>
                 </div>
               </div>
@@ -230,6 +308,7 @@ const Page = () => {
               </div>
             </div>
           </div>
+          )}
         </TabsContent>
 
         {/* Live Updates Tab */}

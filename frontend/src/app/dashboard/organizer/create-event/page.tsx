@@ -29,6 +29,7 @@ const Page = () => {
     errors,
     touched,
     selectedImage,
+    imageFile,
     fileInputRef,
     showLocationPicker,
     isSubmitting,
@@ -50,15 +51,19 @@ const Page = () => {
     handleSubmit,
   } = useEventForm({
     onValidSubmit: async (data) => {
-      const formData = new FormData();
       const firstTicket = data.ticketTypes[0];
+      let imageCid = "";
+
       try {
-        // Upload image to IPFS if it's a data URL
-        const handleUpload = async () => {
-          formData.append("file", data.eventImage);
+        // Upload image to IPFS
+        if (imageFile) {
+          toast.loading("Uploading image to IPFS...");
+          const uploadFormData = new FormData();
+          uploadFormData.append("file", imageFile);
+
           const response = await axios.post(
             "https://api.pinata.cloud/pinning/pinFileToIPFS",
-            formData,
+            uploadFormData,
             {
               headers: {
                 "Content-Type": "multipart/form-data",
@@ -66,18 +71,24 @@ const Page = () => {
               },
             }
           );
-          if (response) {
-            console.log(response)
-            // setSuccessfulResponse(response.data.IpfsHash);
-            // setHasUploaded(true);
+
+          if (response.data && response.data.IpfsHash) {
+            imageCid = response.data.IpfsHash;
+            toast.dismiss();
+            toast.success("Image uploaded to IPFS!");
+            console.log("IPFS CID:", imageCid);
+          } else {
+            throw new Error("Failed to get IPFS hash from response");
           }
-        };
+        } else {
+          throw new Error("No image file selected");
+        }
 
-        // await handleUpload()
-
+        // Create event with IPFS CID
+        toast.loading("Creating event...");
         await createEventMutation.mutateAsync({
           name: data.eventName,
-          image: "imageCid",
+          image: imageCid,
           description: data.description,
           organizer_name: data.organizer,
           event_type: data.eventType,
@@ -93,11 +104,18 @@ const Page = () => {
           maxTicketsPerUser: 1,
           isRefundable: data.isRefundable,
         });
-        toast.success("Event Created")
-        router.push("/dashboard/organizer/event-analytics")
-        // TODO: redirect or show success toast
+
+        toast.dismiss();
+        toast.success("Event created successfully!");
+        router.push("/dashboard/organizer/event-analytics");
       } catch (err) {
-        console.error(err);
+        toast.dismiss();
+        console.error("Error creating event:", err);
+        if (err instanceof Error) {
+          toast.error(err.message || "Failed to create event");
+        } else {
+          toast.error("Failed to create event");
+        }
       }
     },
   });

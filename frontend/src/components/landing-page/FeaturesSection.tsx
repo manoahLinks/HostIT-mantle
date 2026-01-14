@@ -55,7 +55,7 @@ const FeaturesSection = () => {
   });
 
   const variants = {
-    hidden: { opacity: 0, y: 50 },
+    hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
   };
 
@@ -78,7 +78,7 @@ const FeaturesSection = () => {
         initial="hidden"
         animate={inView ? "visible" : "hidden"}
         variants={variants}
-        transition={{ duration: 1.5, ease: "easeInOut" }}
+        transition={{ duration: 0.5, ease: "easeInOut" }}
         className="max-w-[1280px] mx-auto flex gap-4 flex-grow flex-wrap items-center justify-center"
       >
         {featuresData.map(({ header, body, icon }, index) => {

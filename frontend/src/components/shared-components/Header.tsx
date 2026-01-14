@@ -15,15 +15,17 @@ const Header = () => {
           src={"/logo.png"}
           width={149}
           height={47}
-          alt="HostIt logo"
+          alt="HostIt logo - Event management platform"
           className="hidden md:flex"
+          priority
         />
         <Image
           src={"/mobile-logo.png"}
           width={30}
           height={30}
-          alt="HostIt logo"
+          alt="HostIt logo - Event management platform"
           className="flex md:hidden"
+          priority
         />
       </Link>
       <Button

@@ -19,7 +19,8 @@ const ReviewCardMobile = ({image, name, review, role}: Props) => {
               width={110}
               height={110}
               className={`rounded-full`}
-              alt="user-image"
+              alt={`${name} profile photo`}
+              loading="lazy"
             />
             <CardHeader
               className={`text-2xl font-semibold text-transparent text-white text-center`}

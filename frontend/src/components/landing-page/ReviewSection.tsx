@@ -77,7 +77,7 @@ const ReviewSection = (props: Props) => {
   });
 
   const variants = {
-    hidden: { opacity: 0, y: 50 },
+    hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
   };
 
@@ -87,7 +87,7 @@ const ReviewSection = (props: Props) => {
       initial="hidden"
       animate={inView ? "visible" : "hidden"}
       variants={variants}
-      transition={{ duration: 0.7, ease: "easeInOut" }}
+      transition={{ duration: 0.4, ease: "easeInOut" }}
       className="flex flex-col gap-14 max-w-[1280px] mx-auto px-4"
     >
       <div className="flex justify-center">

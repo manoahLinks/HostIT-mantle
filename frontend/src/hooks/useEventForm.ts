@@ -62,6 +62,7 @@ export const useEventForm = (opts?: { onValidSubmit?: (data: EventFormData) => v
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -189,6 +190,9 @@ export const useEventForm = (opts?: { onValidSubmit?: (data: EventFormData) => v
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type.startsWith("image/")) {
+      // Store the actual File object for IPFS upload
+      setImageFile(file);
+
       const reader = new FileReader();
       reader.onload = (e) => {
         // Fix for Error 2: Add null check for e.target
@@ -429,6 +433,7 @@ export const useEventForm = (opts?: { onValidSubmit?: (data: EventFormData) => v
     errors,
     touched,
     selectedImage,
+    imageFile,
     fileInputRef,
     showLocationPicker,
     isSubmitting,

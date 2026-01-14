@@ -78,7 +78,9 @@ const EventCard = ({
         <h1 className="text-2xl font-semibold text-white Aeonik-bold line-clamp-1">
           {name}
         </h1>
-        <p className="text-white text-base line-clamp-3">{description}</p>
+        <p className="text-white text-base line-clamp-3">
+          {description ? description.replace(/<[^>]*>/g, '').trim() : ''}
+        </p>
       </div>
     </div>
   );

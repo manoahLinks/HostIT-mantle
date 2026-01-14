@@ -36,7 +36,10 @@ export const AppWagmiProvider = ({
         walletConnectors: [
           EthereumWalletConnectors,
           ZeroDevSmartWalletConnectors,
-        ],
+        ] as any,
+        overrides: {
+          evmNetworks: (networks) => networks,
+        },
         events: {
           onLogout: () => {
             window.location.href = "/explore";

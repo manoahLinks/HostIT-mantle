@@ -39,7 +39,8 @@ const ReviewCard = ({
             className={`rounded-full transition-all duration-500 ease-in-out ${
               !isOpen ? "opacity-0" : "opacity-100"
             }`}
-            alt="user-image"
+            alt={`${name} profile photo`}
+            loading="lazy"
           />
           <CardHeader
             className={`text-2xl font-semibold text-transparent text-white text-center ${

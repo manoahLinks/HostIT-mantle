@@ -2,6 +2,7 @@
 
 import Slider from "react-slick";
 import React from "react";
+import Image from "next/image";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 
@@ -22,13 +23,13 @@ const ScrollSection = (props: Props) => {
     arrows: false,
     responsive: [
       {
-        breakpoint: 768, 
+        breakpoint: 768,
         settings: {
-          slidesToShow: 3, 
+          slidesToShow: 3,
         },
       },
       {
-        breakpoint: 600, 
+        breakpoint: 600,
         settings: {
           slidesToShow: 2,
         },
@@ -40,7 +41,13 @@ const ScrollSection = (props: Props) => {
     return (
       <div key={index}>
         <div className="flex gap-2 md:gap-12  justify-center items-center">
-          <img src="/scrolling-star.png" />
+          <Image
+            src="/scrolling-star.png"
+            alt="star decoration"
+            width={31}
+            height={31}
+            loading="lazy"
+          />
           <h1 className="text-white font-semibold text-base lg:text-2xl 2xl:text-3xl">
             {text}
           </h1>

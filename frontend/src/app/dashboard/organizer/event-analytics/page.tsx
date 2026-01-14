@@ -3,7 +3,7 @@
 import EventCard from "@/components/dashboard/EventCard";
 import React, { useEffect, useState } from "react";
 import Pagination from "../../../../components/dashboard/Pagination";
-import { fetchEvents, Event } from "@/lib/eventApi";
+import { Event } from "@/lib/eventApi";
 
 type Props = {};
 
@@ -14,26 +14,72 @@ const Page = (props: Props) => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
-  // Fetch events from API
+  // Fix hydration errors by ensuring client-only rendering
   useEffect(() => {
-    const checkScreenSize = () => {
-      const is2XLScreen = window.innerWidth >= 1536;
-      setIs2XL(is2XLScreen);
-      setEventsPerPage(is2XLScreen ? 8 : 6);
-    };
-
-    checkScreenSize();
-
-    window.addEventListener("resize", checkScreenSize);
-    return () => window.removeEventListener("resize", checkScreenSize);
+    setIsClient(true);
   }, []);
 
+  // Fetch events from API - called once on mount
+  useEffect(() => {
+    let isMounted = true; // Prevent state updates if component unmounts
+
+    const loadEvents = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const res = await fetch("/api/events", {
+          cache: "no-store",
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) throw new Error(`Failed to fetch events: ${res.status}`);
+        const data = await res.json();
+
+        if (isMounted) {
+          setEvents(data.events ?? []);
+        }
+      } catch (err) {
+        if (isMounted) {
+          if (err instanceof Error) {
+            if (err.name === 'AbortError') {
+              setError("Request timed out. Please check your connection.");
+            } else {
+              setError(err.message || "Failed to load events");
+            }
+          } else {
+            setError("Failed to load events");
+          }
+          console.error("Error fetching events:", err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadEvents();
+
+    return () => {
+      isMounted = false; // Cleanup on unmount
+    };
+  }, []); // Empty dependency array - runs only once on mount
+
+  // Handle responsive screen size changes
   useEffect(() => {
     const checkScreenSize = () => {
       const is2XLScreen = window.innerWidth >= 1536;
       const newEventsPerPage = is2XLScreen ? 8 : 6;
-      
+
       // Only update state if values actually changed to avoid unnecessary re-renders
       setIs2XL(prev => (prev !== is2XLScreen ? is2XLScreen : prev));
       setEventsPerPage(prev => (prev !== newEventsPerPage ? newEventsPerPage : prev));
@@ -74,25 +120,78 @@ const Page = (props: Props) => {
   };
 
   // Helper function to format date
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const formatDate = (event: any) => {
+    // Try start_date first (if exists)
+    if (event.start_date) {
+      const date = new Date(event.start_date);
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+    // Fallback to createdAt
+    if (event.createdAt) {
+      const date = new Date(event.createdAt);
+      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+    return "TBD";
   };
 
   // Helper function to format time
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true
-    });
+  const formatTime = (event: any) => {
+    // Try start_date first
+    if (event.start_date) {
+      const date = new Date(event.start_date);
+      return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      });
+    }
+    // Check schedule array
+    if (event.schedule && event.schedule.length > 0 && event.schedule[0].start_time) {
+      return event.schedule[0].start_time;
+    }
+    return "TBD";
   };
 
   // Check if event is free
-  const isFreeEvent = (event: Event) => {
-    return event.ticket_types.some(ticket => ticket.price === 0);
+  const isFreeEvent = (event: any) => {
+    // Check event_category first (database field)
+    if (event.event_category?.toLowerCase() === 'free') return true;
+    // Fallback to ticket_types if available
+    return event.ticket_types?.some((ticket: any) => ticket.price === 0) ?? false;
   };
+
+  // Prevent hydration errors - don't render until client is ready
+  if (!isClient) {
+    return (
+      <div className="pb-16 relative min-h-[82vh] px-4 sm:px-6 md:px-8 xl:px-10 2xl:px-12">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4">
+            <svg
+              className="animate-spin h-12 w-12 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <p className="text-white text-lg">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pb-16 relative min-h-[82vh] px-4 sm:px-6 md:px-8 xl:px-10 2xl:px-12">
@@ -164,12 +263,13 @@ const Page = (props: Props) => {
               >
                 <EventCard
                   isFree={isFreeEvent(event)}
-                  date={formatDate(event.start_date)}
-                  time={formatTime(event.start_date)}
+                  date={formatDate(event)}
+                  time={formatTime(event)}
                   location={event.location}
                   name={event.name}
                   description={event.description}
                   id={event._id}
+                  image={event.image ? `https://ipfs.io/ipfs/${event.image}` : undefined}
                 />
               </div>
             ))}

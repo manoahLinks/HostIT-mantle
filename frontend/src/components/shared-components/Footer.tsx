@@ -24,7 +24,13 @@ const Footer = () => {
     <div className="max-w-[1280px] mx-auto px-4">
       <div className="flex flex-col md:flex-row justify-between items-center mx-2 my-2 gap-5 ">
         <div className="md:w-1/3">
-          <Image src="/logo.png" alt="hostit-logo" width={149} height={25} />
+          <Image
+            src="/logo.png"
+            alt="HostIt logo - Event management platform"
+            width={149}
+            height={25}
+            loading="lazy"
+          />
         </div>
         <Dialog>
           <div className="flex gap-8 items-center w-full md:w-1/3 justify-center">

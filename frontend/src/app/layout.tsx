@@ -15,10 +15,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ overflowY: "scroll" }}>
+    <html lang="en" style={{ overflowY: "scroll" }} suppressHydrationWarning>
       <AppWagmiProvider>
         <ReactLenis root>
-          <body className={`bg-[#131939] antialiased text-text`}>
+          <body className={`bg-[#131939] antialiased text-text`} suppressHydrationWarning>
             <Toaster richColors closeButton position="top-right" />
             {children}
           </body>
