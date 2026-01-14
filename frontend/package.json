@@ -9,11 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@dynamic-labs/ethereum": "^4.25.10",
-    "@dynamic-labs/ethereum-aa": "^4.25.10",
-    "@dynamic-labs/ethers-v6": "^4.25.10",
-    "@dynamic-labs/sdk-react-core": "^4.25.10",
-    "@dynamic-labs/wagmi-connector": "^4.25.10",
+    "@dynamic-labs/ethereum": "4.37.2",
+    "@dynamic-labs/ethereum-aa": "4.37.2",
+    "@dynamic-labs/ethers-v6": "4.37.2",
+    "@dynamic-labs/sdk-react-core": "4.37.2",
+    "@dynamic-labs/wagmi-connector": "4.37.2",
     "@mantleio/sdk": "^1.0.5",
     "@radix-ui/react-dialog": "^1.1.6",
     "@radix-ui/react-separator": "^1.1.0",
