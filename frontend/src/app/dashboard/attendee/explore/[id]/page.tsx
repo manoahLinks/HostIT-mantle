@@ -17,6 +17,7 @@ import { formatEther } from "viem";
 import { useRegisterForEvent } from "@/hooks/useRegisterForEvent";
 import { useRegistrationForm } from "@/hooks/useRegistrationForm";
 import { toast } from "sonner";
+import { useMantleDeposit } from "@/hooks/useDepositMntFromL1";
 
 type EventJson = {
   platform: string;
@@ -75,6 +76,33 @@ const Page = () => {
     } catch (error: any) {
       console.error("Registration error:", error);
       toast.error(error?.message || "Registration failed. Please try again.");
+    }
+  };
+
+  // Mantle deposit hook
+  const { depositMNT, step, isLoading: isBridging } = useMantleDeposit({
+    l1ChainId: Number(process.env.NEXT_PUBLIC_L1_CHAINID),
+    l2ChainId: Number(process.env.NEXT_PUBLIC_L2_CHAINID),
+    l1RpcUrl: process.env.NEXT_PUBLIC_L1_RPC!,
+    l2RpcUrl: process.env.NEXT_PUBLIC_L2_RPC!,
+    l1MntAddress: process.env.NEXT_PUBLIC_L1_MNT as `0x${string}`,
+    l2MntAddress: process.env.NEXT_PUBLIC_L2_MNT as `0x${string}`,
+  });
+
+  // Bridge and purchase handler
+  const handleBridgeAndPurchase = async () => {
+    if (!feeEthStr || isFree) {
+      toast.error("Cannot bridge for free events");
+      return;
+    }
+
+    try {
+      toast.info("Starting MNT bridge from L1 to L2...");
+      await depositMNT(feeEthStr);
+      toast.success("Bridge complete! You can now purchase the ticket.");
+    } catch (error: any) {
+      console.error("Bridge error:", error);
+      // Error toast already handled by the hook
     }
   };
 
@@ -284,6 +312,27 @@ const Page = () => {
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Bridge from L1 to L2 Button */}
+            {!isFree && (
+              <Button
+                onClick={handleBridgeAndPurchase}
+                disabled={isBridging}
+                className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isBridging ? `${step.message}...` : "Purchase with MNT from L1"}
+              </Button>
+            )}
+
+            {/* Bridge Progress Indicator */}
+            {isBridging && (
+              <div className="w-full bg-gray-800 rounded-full h-2 mt-2">
+                <div
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${step.progress}%` }}
+                />
+              </div>
+            )}
           </div>
 
           {/* Map */}

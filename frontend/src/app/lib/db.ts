@@ -12,7 +12,7 @@ if (!cached) {
 }
 
 export const connectDB = async (): Promise<typeof mongoose | null> => {
-  const uri = process.env.NEXT_PUBLIC_MONGODB_URL as string | undefined;
+  const uri = process.env.MONGODB_URL as string | undefined;
 
   // Gracefully handle missing configuration instead of throwing at import time.
   if (!uri) {
