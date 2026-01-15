@@ -92,7 +92,7 @@ const Page = () => {
         toast.loading("Creating event...");
 
         // Check wallet is connected
-        let activeWalletClient = walletClient;
+        let activeWalletClient: any = walletClient;
 
         if (!activeWalletClient && primaryWallet) {
           try {
