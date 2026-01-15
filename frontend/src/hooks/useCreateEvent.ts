@@ -3,7 +3,7 @@ import { createEvent, updateEvent, type EventCreatePayload } from "@/lib/service
 import { publicClient, DIAMOND_ADDRESS, getWalletClient, SELECTED_CHAIN } from "@/lib/chain";
 import FactoryFacetAbi from "@/abis/FactoryFacetAbi.json";
 import type { AbiEvent, WalletClient } from "viem";
-import { parseEther, decodeEventLog } from "viem";
+import { parseEther, decodeEventLog, numberToHex } from "viem";
 
 export type CreateEventInput = {
   // Backend fields
@@ -67,6 +67,27 @@ export function useCreateEvent() {
       const feeTypes = [0]; // assume native token fee type = 0
       const fees = [parseEther(input.ticketPriceEth)];
 
+      // Check and switch chain if necessary
+      const currentChainId = await activeWalletClient.getChainId();
+      if (currentChainId !== SELECTED_CHAIN.id) {
+        try {
+          await activeWalletClient.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: numberToHex(SELECTED_CHAIN.id) }],
+          });
+        } catch (error: any) {
+          // If the chain is not added, you might want to add it here, 
+          // but for now we'll assume it's configured or throw a clearer error
+          console.error("Failed to switch chain:", error);
+          if (error.code === 4902) {
+            // Chain not found, attempt to add it?
+            // For now just throw
+            throw new Error("Target chain not found in wallet. Please add Mantle Sepolia Testnet.");
+          }
+          throw new Error("Failed to switch network. Please switch to Mantle Sepolia manually.");
+        }
+      }
+
       const hash = await activeWalletClient.writeContract({
         address: DIAMOND_ADDRESS,
         chain: SELECTED_CHAIN,
@@ -114,7 +135,7 @@ export function useCreateEvent() {
               }
               break;
             }
-          } catch {}
+          } catch { }
         }
       }
 
