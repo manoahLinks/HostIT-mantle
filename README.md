@@ -71,3 +71,16 @@ yarn dev
 cd ticket
 forge build
 ```
+
+## EVENT CONTRACT ADDRESS: 
+0x9f0ed461329DE6fE31A16749048FfD4E76869F0a
+
+<https://sepolia.mantlescan.xyz/address/0x9f0ed461329de6fe31a16749048ffd4e76869f0a>
+
+## DEMO VIDEO
+
+<https://youtu.be/k-_MyN2TSHk>
+
+## DEMO VIDEO continued
+
+<https://youtu.be/w-ufoJCubJ8>
