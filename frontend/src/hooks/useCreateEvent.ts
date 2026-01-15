@@ -64,7 +64,7 @@ export function useCreateEvent() {
       const isRefundable = Boolean(input.isRefundable);
       const ticketName = input.ticketName;
       const ticketSymbol = input.ticketSymbol ?? "HIT";
-      const feeTypes = [0]; // assume native token fee type = 0
+      const feeTypes = [1]; // assume native token fee type = 0
       const fees = [parseEther(input.ticketPriceEth)];
 
       // Check and switch chain if necessary
