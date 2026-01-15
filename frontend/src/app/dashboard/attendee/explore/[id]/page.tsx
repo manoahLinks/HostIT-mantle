@@ -203,7 +203,7 @@ const Page = () => {
         {/* Left Section (Image + Description) */}
         <div className="w-full lg:w-2/3 relative">
           <img
-            src={eventJson?.image ?? "/event-image.png"}
+            src={eventJson?.image ? `https://gateway.pinata.cloud/ipfs/${eventJson.image}` : "/event-image.png"}
             alt="event-image"
             className="w-full rounded-3xl object-cover h-48 sm:h-56 lg:h-60 2xl:h-64"
           />
@@ -216,9 +216,10 @@ const Page = () => {
               Description
             </h1>
           </div>
-          <p className="text-white text-base sm:text-lg 2xl:text-xl">
-            {eventJson?.description}
-          </p>
+          <div
+            className="text-white text-base sm:text-lg 2xl:text-xl prose prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: eventJson?.description || '' }}
+          />
         </div>
 
         {/* Right Section (Details + Actions) */}
