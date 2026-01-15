@@ -66,8 +66,8 @@ const Page = () => {
     }
 
     try {
-      // @ts-ignore
-      const walletClient = await (primaryWallet?.connector as any)?.getWalletClient?.();
+      // Get wallet client directly from Dynamic Labs primaryWallet
+      const walletClient = await (primaryWallet as any)?.getWalletClient?.();
 
       await registerMutation.mutateAsync({
         ...formData,

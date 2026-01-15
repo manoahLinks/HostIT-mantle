@@ -7,7 +7,6 @@ import { http } from "viem";
 import { mantleSepoliaTestnet, sepolia } from "viem/chains";
 import { DynamicContextProvider } from "@dynamic-labs/sdk-react-core";
 import { EthereumWalletConnectors } from "@dynamic-labs/ethereum";
-import { ZeroDevSmartWalletConnectors } from "@dynamic-labs/ethereum-aa";
 export const createWagmiConfig = () =>
   createConfig({
     chains: [mantleSepoliaTestnet, sepolia],
@@ -35,7 +34,6 @@ export const AppWagmiProvider = ({
           "",
         walletConnectors: [
           EthereumWalletConnectors,
-          ZeroDevSmartWalletConnectors,
         ] as any,
         overrides: {
           evmNetworks: (networks) => networks,
