@@ -4,7 +4,7 @@ import { useAccount } from 'wagmi';
 import { CrossChainMessenger, MessageStatus } from '@mantleio/sdk';
 import { walletClient as viemWalletClient } from '@/lib/chain';
 
-export type ERC721WithdrawalStatus = 
+export type ERC721WithdrawalStatus =
   | 'idle'
   | 'initiating'
   | 'waiting_prove'
@@ -29,7 +29,7 @@ interface MantleERC721Config {
 
 export const useWithdrawERC721ToL1 = (config: MantleERC721Config) => {
   const { address, isConnected } = useAccount();
-  
+
   const [step, setStep] = useState<ERC721WithdrawalStep>({
     status: 'idle',
     message: '',
@@ -39,7 +39,7 @@ export const useWithdrawERC721ToL1 = (config: MantleERC721Config) => {
   const [error, setError] = useState<Error | null>(null);
 
   const withdrawERC721 = useCallback(
-    async (l1TokenAddress: `0x${string}`, l2TokenAddress: `0x${string}`, tokenId: string) => {
+    async (l1TokenAddress: `0x${string}`, l2TokenAddress: `0x${string}`, tokenId: string, overrides?: { provider?: any }) => {
       // Validation
       if (!isConnected || !address) {
         throw new Error('Please connect your wallet first');
@@ -54,6 +54,8 @@ export const useWithdrawERC721ToL1 = (config: MantleERC721Config) => {
       const startTime = Date.now();
 
       try {
+        const providerToUse = overrides?.provider || (typeof window !== 'undefined' ? (window as any).ethereum : undefined);
+
         // Get account from wallet client
         if (!viemWalletClient) throw new Error("Wallet not available. Connect a wallet.");
         const [account] = await viemWalletClient.getAddresses();
@@ -67,7 +69,7 @@ export const useWithdrawERC721ToL1 = (config: MantleERC721Config) => {
         const l2Provider = new ethers.providers.JsonRpcProvider(config.l2RpcUrl);
 
         // Create Web3Provider from window.ethereum for L2 signer
-        const web3Provider = new ethers.providers.Web3Provider(window.ethereum as any);
+        const web3Provider = new ethers.providers.Web3Provider(providerToUse);
         const l2Signer = web3Provider.getSigner();
 
         // Initialize CrossChainMessenger with user's wallet
@@ -97,10 +99,10 @@ export const useWithdrawERC721ToL1 = (config: MantleERC721Config) => {
           l2TokenAddress,
           tokenId
         );
-        
+
         setTxHash(withdrawTx.hash);
         console.log(`ERC721 withdrawal transaction hash: ${withdrawTx.hash}`);
-        
+
         setStep({
           status: 'initiating',
           message: 'Waiting for L2 confirmation...',
@@ -129,7 +131,7 @@ export const useWithdrawERC721ToL1 = (config: MantleERC721Config) => {
 
         const proveTx = await messenger.proveMessage(withdrawTx.hash);
         console.log(`Prove transaction hash: ${proveTx.hash}`);
-        
+
         setStep({
           status: 'proving',
           message: 'Waiting for prove confirmation...',
@@ -168,7 +170,7 @@ export const useWithdrawERC721ToL1 = (config: MantleERC721Config) => {
           },
         });
         console.log(`Finalize transaction hash: ${finalizeTx.hash}`);
-        
+
         setStep({
           status: 'finalizing',
           message: 'Waiting for finalization...',
@@ -193,7 +195,7 @@ export const useWithdrawERC721ToL1 = (config: MantleERC721Config) => {
         };
       } catch (err: any) {
         console.error('ERC721 withdrawal error:', err);
-        
+
         // Parse error message
         let errorMessage = 'Withdrawal failed';
         if (err?.message) {
@@ -213,7 +215,7 @@ export const useWithdrawERC721ToL1 = (config: MantleERC721Config) => {
           message: errorMessage,
           progress: 0,
         });
-        
+
         throw error;
       }
     },

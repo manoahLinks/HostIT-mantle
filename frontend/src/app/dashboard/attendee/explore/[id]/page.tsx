@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { IoIosArrowRoundBack } from "react-icons/io";
 import { GoDotFill } from "react-icons/go";
 import { useParams, useRouter } from "next/navigation";
+import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import TicketPoap from "@/components/dashboard/TicketPoap";
 import { FaBookmark } from "react-icons/fa6";
 import { IoIosShareAlt } from "react-icons/io";
@@ -34,6 +35,7 @@ type EventJson = {
 const Page = () => {
   const router = useRouter();
   const { id } = useParams();
+  const { primaryWallet } = useDynamicContext();
   const [eventJson, setEventJson] = useState<EventJson | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
@@ -64,12 +66,16 @@ const Page = () => {
     }
 
     try {
+      // @ts-ignore
+      const walletClient = await (primaryWallet?.connector as any)?.getWalletClient?.();
+
       await registerMutation.mutateAsync({
         ...formData,
         eventId: id as string,
         eventName: eventJson.name,
         ticketId: Number(eventJson.ticketId),
         role: "attendee",
+        walletClient,
       });
 
       toast.success("Successfully registered for the event!");
@@ -100,7 +106,9 @@ const Page = () => {
 
     try {
       toast.info("Starting MNT bridge from L1 to L2...");
-      await depositMNT(feeEthStr);
+      // @ts-ignore
+      const provider = (await (primaryWallet?.connector as any)?.getProvider?.()) || (typeof window !== 'undefined' ? (window as any).ethereum : undefined);
+      await depositMNT(feeEthStr, { provider });
       toast.success("Bridge complete! You can now purchase the ticket.");
     } catch (error: any) {
       console.error("Bridge error:", error);
@@ -109,20 +117,22 @@ const Page = () => {
   };
 
   // Mantle withdraw hook
-  const {withdrawMNT, step: withdrawStep, isLoading: isWithdrawing} = useMantleWithdrawal({
+  const { withdrawMNT, step: withdrawStep, isLoading: isWithdrawing } = useMantleWithdrawal({
     l1ChainId: 11155111,
     l2ChainId: 5003,
     l1RpcUrl: "https://1rpc.io/sepolia",
     l2RpcUrl: "https://rpc.sepolia.mantle.xyz",
     l1MntAddress: "0x65e37B558F64E2Be5768DB46DF22F93d85741A9E" as `0x${string}`,
     l2MntAddress: "0x0000000000000000000000000000000000000000" as `0x${string}`,
-  }) 
+  })
 
   // bridge Mnt from l2 to L1
   const handleBridgeMntL2ToL1 = async () => {
     try {
       toast.info("Starting MNT bridge from L2 to L1...");
-      await withdrawMNT(feeEthStr);
+      // @ts-ignore
+      const provider = (await (primaryWallet?.connector as any)?.getProvider?.()) || (typeof window !== 'undefined' ? (window as any).ethereum : undefined);
+      await withdrawMNT(feeEthStr, { provider });
       toast.success("Bridge complete!");
     } catch (error: any) {
       console.error("Bridge error:", error);
@@ -131,17 +141,19 @@ const Page = () => {
   };
 
   // withdraw ERC721 from L2 to L1
-  const {withdrawERC721, step: withdrawERC721Step, isLoading: isWithdrawingERC721} = useWithdrawERC721ToL1({
+  const { withdrawERC721, step: withdrawERC721Step, isLoading: isWithdrawingERC721 } = useWithdrawERC721ToL1({
     l1ChainId: 11155111,
     l2ChainId: 5003,
     l1RpcUrl: "https://1rpc.io/sepolia",
     l2RpcUrl: "https://rpc.sepolia.mantle.xyz",
-  }) 
+  })
 
   const handleWithdrawERC721 = async () => {
     try {
       toast.info("Starting ERC721 withdrawal from L2 to L1...");
-      await withdrawERC721('0xD171f2a5c38c52D255091B5232e1e710EAD3CEde' as `0x${string}`, '0x5a87BD93ac3eD187AB5B86E4C55DA2E480165A16' as `0x${string}`, '1');
+      // @ts-ignore
+      const provider = (await (primaryWallet?.connector as any)?.getProvider?.()) || (typeof window !== 'undefined' ? (window as any).ethereum : undefined);
+      await withdrawERC721('0xD171f2a5c38c52D255091B5232e1e710EAD3CEde' as `0x${string}`, '0x5a87BD93ac3eD187AB5B86E4C55DA2E480165A16' as `0x${string}`, '1', { provider });
       toast.success("Withdrawal complete!");
     } catch (error: any) {
       console.error("Withdrawal error:", error);
@@ -245,7 +257,7 @@ const Page = () => {
                 <div className="p-8 rounded-t-3xl bg-subsidiary flex justify-center items-center">
                   <GiPadlock color="#ffffff" size={64} />
                 </div>
-                
+
                 <div className="p-6 flex flex-col gap-4">
                   <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-[#007CFA] from-30% to-white to-95% bg-clip-text text-transparent text-center">
                     {isFree
@@ -267,11 +279,10 @@ const Page = () => {
                         onChange={handleChange}
                         onBlur={() => handleBlur("name")}
                         placeholder="Enter your name"
-                        className={`w-full bg-transparent border ${
-                          errors.name && touched.name
-                            ? "border-red-400"
-                            : "border-white/60"
-                        } h-12 text-base p-4 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/80`}
+                        className={`w-full bg-transparent border ${errors.name && touched.name
+                          ? "border-red-400"
+                          : "border-white/60"
+                          } h-12 text-base p-4 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/80`}
                       />
                       {errors.name && touched.name && (
                         <p className="text-red-400 text-sm mt-1">{errors.name}</p>
@@ -290,11 +301,10 @@ const Page = () => {
                         onChange={handleChange}
                         onBlur={() => handleBlur("email")}
                         placeholder="Enter your email"
-                        className={`w-full bg-transparent border ${
-                          errors.email && touched.email
-                            ? "border-red-400"
-                            : "border-white/60"
-                        } h-12 text-base p-4 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/80`}
+                        className={`w-full bg-transparent border ${errors.email && touched.email
+                          ? "border-red-400"
+                          : "border-white/60"
+                          } h-12 text-base p-4 rounded-xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/80`}
                       />
                       {errors.email && touched.email && (
                         <p className="text-red-400 text-sm mt-1">{errors.email}</p>
@@ -341,8 +351,8 @@ const Page = () => {
                     {registerMutation.isPending
                       ? "Processing..."
                       : isFree
-                      ? "Register Now"
-                      : "Buy Ticket"}
+                        ? "Register Now"
+                        : "Buy Ticket"}
                   </Button>
 
                   {/* Status Messages */}
@@ -377,18 +387,18 @@ const Page = () => {
             )}
 
             <Button
-                onClick={handleBridgeMntL2ToL1}
-                className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isWithdrawing ? `${withdrawStep.message}...` : "Purchase with MNT from L2"}
-              </Button>
+              onClick={handleBridgeMntL2ToL1}
+              className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isWithdrawing ? `${withdrawStep.message}...` : "Purchase with MNT from L2"}
+            </Button>
 
-              <Button
-                onClick={handleWithdrawERC721}
-                className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isWithdrawingERC721 ? `${withdrawERC721Step.message}...` : "Withdraw ERC721"}
-              </Button>
+            <Button
+              onClick={handleWithdrawERC721}
+              className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isWithdrawingERC721 ? `${withdrawERC721Step.message}...` : "Withdraw ERC721"}
+            </Button>
           </div>
 
           {/* Map */}

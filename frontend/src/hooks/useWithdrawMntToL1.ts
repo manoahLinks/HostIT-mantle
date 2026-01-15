@@ -5,7 +5,7 @@ import { useAccount } from 'wagmi';
 import { CrossChainMessenger, MessageStatus } from '@mantleio/sdk';
 import { walletClient as viemWalletClient } from '@/lib/chain';
 
-export type WithdrawalStatus = 
+export type WithdrawalStatus =
   | 'idle'
   | 'initiating'
   | 'waiting_state_root'
@@ -32,7 +32,7 @@ interface MantleWithdrawalConfig {
 
 export const useMantleWithdrawal = (config: MantleWithdrawalConfig) => {
   const { address, isConnected } = useAccount();
-  
+
   const [step, setStep] = useState<WithdrawalStep>({
     status: 'idle',
     message: '',
@@ -42,14 +42,10 @@ export const useMantleWithdrawal = (config: MantleWithdrawalConfig) => {
   const [error, setError] = useState<Error | null>(null);
 
   const withdrawMNT = useCallback(
-    async (amount: string) => {
+    async (amount: string, overrides?: { provider?: any }) => {
       // Validation
       if (!isConnected || !address) {
         throw new Error('Please connect your wallet first');
-      }
-
-      if (!viemWalletClient) {
-        throw new Error('Wallet client not available');
       }
 
       setError(null);
@@ -57,10 +53,8 @@ export const useMantleWithdrawal = (config: MantleWithdrawalConfig) => {
       const startTime = Date.now();
 
       try {
-        // Get account from wallet client
-        if (!viemWalletClient) throw new Error("Wallet not available. Connect a wallet.");
-        const [account] = await viemWalletClient.getAddresses();
-        if (!account) throw new Error("No account connected.");
+        const providerToUse = overrides?.provider || (typeof window !== 'undefined' ? (window as any).ethereum : undefined);
+        if (!providerToUse) throw new Error("No wallet provider available");
 
         // Import ethers dynamically
         const ethers = await import('ethers');
@@ -69,8 +63,8 @@ export const useMantleWithdrawal = (config: MantleWithdrawalConfig) => {
         const l1Provider = new ethers.providers.JsonRpcProvider(config.l1RpcUrl);
         const l2Provider = new ethers.providers.JsonRpcProvider(config.l2RpcUrl);
 
-        // Create Web3Provider from window.ethereum for L2 signer
-        const web3Provider = new ethers.providers.Web3Provider(window.ethereum as any);
+        // Create Web3Provider from provider for L2 signer (since we are withdrawing FROM L2)
+        const web3Provider = new ethers.providers.Web3Provider(providerToUse);
         const l2Signer = web3Provider.getSigner();
 
         // Initialize CrossChainMessenger with user's wallet
@@ -129,7 +123,7 @@ export const useMantleWithdrawal = (config: MantleWithdrawalConfig) => {
 
         const proveTx = await messenger.proveMessage(withdrawTx.hash);
         console.log(`Prove transaction hash: ${proveTx.hash}`);
-        
+
         setStep({
           status: 'proving',
           message: 'Waiting for prove confirmation...',
@@ -158,7 +152,7 @@ export const useMantleWithdrawal = (config: MantleWithdrawalConfig) => {
 
         const finalizeTx = await messenger.finalizeMessage(withdrawTx.hash);
         console.log(`Finalize transaction hash: ${finalizeTx.hash}`);
-        
+
         setStep({
           status: 'finalizing',
           message: 'Waiting for finalization...',
@@ -183,7 +177,7 @@ export const useMantleWithdrawal = (config: MantleWithdrawalConfig) => {
         };
       } catch (err: any) {
         console.error('MNT withdrawal error:', err);
-        
+
         // Parse error message
         let errorMessage = 'Withdrawal failed';
         if (err?.message) {
@@ -203,7 +197,7 @@ export const useMantleWithdrawal = (config: MantleWithdrawalConfig) => {
           message: errorMessage,
           progress: 0,
         });
-        
+
         throw error;
       }
     },
