@@ -26,6 +26,30 @@ import { LucideImport } from "lucide-react";
 import { Event } from "@/lib/eventApi";
 import { toast } from "sonner";
 
+// Helper function to get the correct image URL
+const getImageUrl = (image: string | undefined): string => {
+  if (!image) return "/event-image.png";
+
+  // If it's already a full URL (http/https), use it directly
+  if (image.startsWith("http://") || image.startsWith("https://")) {
+    return image;
+  }
+
+  // If it's a base64 string, use it directly
+  if (image.startsWith("data:image")) {
+    return image;
+  }
+
+  // If it starts with ipfs://, extract the CID
+  if (image.startsWith("ipfs://")) {
+    const cid = image.replace("ipfs://", "");
+    return `https://gateway.pinata.cloud/ipfs/${cid}`;
+  }
+
+  // Otherwise, assume it's an IPFS CID and construct the URL
+  return `https://gateway.pinata.cloud/ipfs/${image}`;
+};
+
 const Page = () => {
   const router = useRouter();
   const { id } = useParams();
@@ -156,7 +180,7 @@ const Page = () => {
               {/* Left Column - Event Image and Description */}
               <div className="w-full lg:w-2/3 relative">
                 <img
-                  src={currentEvent.image ? `https://ipfs.io/ipfs/${currentEvent.image}` : "/event-image.png"}
+                  src={getImageUrl(currentEvent.image)}
                   alt="event-image"
                   className="w-full rounded-3xl h-48 sm:h-56 2xl:h-64 object-cover"
                 />
@@ -172,7 +196,7 @@ const Page = () => {
                 </div>
 
                 <div
-                  className="text-white text-base sm:text-lg 2xl:text-xl leading-relaxed prose prose-invert max-w-none"
+                  className="text-white text-base sm:text-lg 2xl:text-xl leading-relaxed max-w-none [&>p]:mb-4 [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-2 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mb-2 [&>h3]:text-lg [&>h3]:font-semibold [&>h3]:mb-2 [&>ul]:list-disc [&>ul]:ml-6 [&>ul]:mb-4 [&>ol]:list-decimal [&>ol]:ml-6 [&>ol]:mb-4 [&>li]:mb-1 [&>a]:text-blue-400 [&>a]:underline [&>strong]:font-bold [&>em]:italic"
                   dangerouslySetInnerHTML={{ __html: currentEvent.description || '' }}
                 />
               </div>
@@ -266,46 +290,59 @@ const Page = () => {
               <TicketPoap isTicket={false} isAttendee={false} />
 
               {/* Revenue Card */}
-              <div className="border border-subsidiary py-4 px-4 sm:py-6 sm:px-6 2xl:py-6 2xl:px-10 rounded-2xl flex flex-col gap-4">
-                <div className="flex justify-between items-center">
-                  <h1 className="text-lg sm:text-xl 2xl:text-2xl font-bold bg-gradient-to-r from-[#007CFA] from-30% to-white to-95% bg-clip-text text-transparent inline-flex w-auto">
-                    Ticket Revenue
-                  </h1>
-                </div>
+              {(() => {
+                // Calculate ticket stats from event data
+                const ticketTypes = currentEvent.ticket_types || [];
+                const totalTickets = ticketTypes.reduce((sum, t) => sum + (t.quantity || 0), 0);
+                const totalRevenue = ticketTypes.reduce((sum, t) => sum + ((t.price || 0) * (t.quantity || 0)), 0);
+                const soldTickets = 0; 
+                const soldRevenue = 0; 
+                const availableTickets = totalTickets - soldTickets;
+                const availableRevenue = totalRevenue - soldRevenue;
 
-                <div className="flex justify-between items-center">
-                  <div className="flex flex-col justify-center items-center">
-                    <h1 className="text-2xl sm:text-3xl 2xl:text-5xl text-white">
-                      $2000
-                    </h1>
-                    <p className="text-white text-sm sm:text-base 2xl:text-lg">
-                      Total
-                    </p>
+                return (
+                  <div className="border border-subsidiary py-4 px-4 sm:py-6 sm:px-6 2xl:py-6 2xl:px-10 rounded-2xl flex flex-col gap-4">
+                    <div className="flex justify-between items-center">
+                      <h1 className="text-lg sm:text-xl 2xl:text-2xl font-bold bg-gradient-to-r from-[#007CFA] from-30% to-white to-95% bg-clip-text text-transparent inline-flex w-auto">
+                        Ticket Revenue
+                      </h1>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <div className="flex flex-col justify-center items-center">
+                        <h1 className="text-2xl sm:text-3xl 2xl:text-5xl text-white">
+                          ${totalRevenue.toLocaleString()}
+                        </h1>
+                        <p className="text-white text-sm sm:text-base 2xl:text-lg">
+                          Total ({totalTickets})
+                        </p>
+                      </div>
+
+                      <PiLineVerticalThin className="text-white text-4xl sm:text-6xl 2xl:text-8xl" />
+
+                      <div className="flex flex-col justify-center items-center">
+                        <h1 className="text-2xl sm:text-3xl 2xl:text-5xl text-white">
+                          ${soldRevenue.toLocaleString()}
+                        </h1>
+                        <p className="text-white text-sm sm:text-base 2xl:text-lg">
+                          Sold ({soldTickets})
+                        </p>
+                      </div>
+
+                      <PiLineVerticalThin className="text-white text-4xl sm:text-6xl 2xl:text-8xl" />
+
+                      <div className="flex flex-col justify-center items-center">
+                        <h1 className="text-2xl sm:text-3xl 2xl:text-5xl text-white">
+                          ${availableRevenue.toLocaleString()}
+                        </h1>
+                        <p className="text-white text-sm sm:text-base 2xl:text-lg">
+                          Available ({availableTickets})
+                        </p>
+                      </div>
+                    </div>
                   </div>
-
-                  <PiLineVerticalThin className="text-white text-4xl sm:text-6xl 2xl:text-8xl" />
-
-                  <div className="flex flex-col justify-center items-center">
-                    <h1 className="text-2xl sm:text-3xl 2xl:text-5xl text-white">
-                      $0
-                    </h1>
-                    <p className="text-white text-sm sm:text-base 2xl:text-lg">
-                      Sold
-                    </p>
-                  </div>
-
-                  <PiLineVerticalThin className="text-white text-4xl sm:text-6xl 2xl:text-8xl" />
-
-                  <div className="flex flex-col justify-center items-center">
-                    <h1 className="text-2xl sm:text-3xl 2xl:text-5xl text-white">
-                      $2000
-                    </h1>
-                    <p className="text-white text-sm sm:text-base 2xl:text-lg">
-                      Available
-                    </p>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
           </div>
           )}

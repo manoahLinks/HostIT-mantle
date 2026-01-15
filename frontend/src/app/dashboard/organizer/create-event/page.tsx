@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useIsLoggedIn } from "@dynamic-labs/sdk-react-core";
 import Link from "next/link";
+import { useWalletClient } from "wagmi";
 import { MdEventBusy } from "react-icons/md";
 import { BsStars } from "react-icons/bs";
 import axios from 'axios';
@@ -24,6 +25,7 @@ const Page = () => {
   const createEventMutation = useCreateEvent();
   const router = useRouter();
   const isLoggedIn = useIsLoggedIn();
+  const { data: walletClient } = useWalletClient();
   const {
     formData,
     errors,
@@ -86,6 +88,12 @@ const Page = () => {
 
         // Create event with IPFS CID
         toast.loading("Creating event...");
+
+        // Check wallet is connected
+        if (!walletClient) {
+          throw new Error("Please connect your wallet first");
+        }
+
         await createEventMutation.mutateAsync({
           name: data.eventName,
           image: imageCid,
@@ -103,6 +111,7 @@ const Page = () => {
           endDateIso: data.endDate,
           maxTicketsPerUser: 1,
           isRefundable: data.isRefundable,
+          walletClient: walletClient,
         });
 
         toast.dismiss();

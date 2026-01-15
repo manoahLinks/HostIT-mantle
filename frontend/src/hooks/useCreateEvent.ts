@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import { createEvent, updateEvent, type EventCreatePayload } from "@/lib/services/events";
-import { walletClient, publicClient, DIAMOND_ADDRESS } from "@/lib/chain";
+import { publicClient, DIAMOND_ADDRESS, getWalletClient, SELECTED_CHAIN } from "@/lib/chain";
 import FactoryFacetAbi from "@/abis/FactoryFacetAbi.json";
-import type { AbiEvent } from "viem";
+import type { AbiEvent, WalletClient } from "viem";
 import { parseEther, decodeEventLog } from "viem";
 
 export type CreateEventInput = {
@@ -24,6 +24,8 @@ export type CreateEventInput = {
   endDateIso: string; // ISO datetime
   maxTicketsPerUser?: number; // default: 1
   isRefundable?: boolean; // default: false
+  // Wallet client from Dynamic Labs
+  walletClient?: WalletClient;
 };
 
 function toUnixSeconds(iso: string): number {
@@ -47,10 +49,11 @@ export function useCreateEvent() {
       };
       const { id: eventId, link: metadataUri } = await createEvent(payload);
 
-      // 2) Write createTicket on-chain
-      if (!walletClient) throw new Error("Wallet not available. Connect a wallet.");
-      const [account] = await walletClient.getAddresses();
-      if (!account) throw new Error("No account connected.");
+      // 2) Write createTicket on-chain - use provided walletClient or try window.ethereum
+      const activeWalletClient = input.walletClient || (typeof window !== "undefined" && (window as any).ethereum ? getWalletClient((window as any).ethereum) : undefined);
+      if (!activeWalletClient) throw new Error("Wallet not connected. Please connect your wallet first.");
+      const [account] = await activeWalletClient.getAddresses();
+      if (!account) throw new Error("No account connected. Please connect your wallet.");
 
       const startTime = toUnixSeconds(input.startDateIso);
       const endTime = toUnixSeconds(input.endDateIso);
@@ -64,8 +67,9 @@ export function useCreateEvent() {
       const feeTypes = [0]; // assume native token fee type = 0
       const fees = [parseEther(input.ticketPriceEth)];
 
-      const hash = await walletClient.writeContract({
+      const hash = await activeWalletClient.writeContract({
         address: DIAMOND_ADDRESS,
+        chain: SELECTED_CHAIN,
         account,
         abi: FactoryFacetAbi as any,
         functionName: "createTicket",
