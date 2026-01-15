@@ -25,6 +25,8 @@ import { Input } from "@/components/ui/input";
 import { MdAnalytics } from "react-icons/md";
 import { useContractRead, useContractWrite } from "@/hooks/useContract";
 import { formatEther } from "viem";
+import { useWithdrawERC721ToL1 } from '@/hooks/useWithdrawERC721ToL1';
+import { toast } from "sonner";
 
 const Page = () => {
   const router = useRouter();
@@ -69,6 +71,28 @@ const Page = () => {
     abiName: "CheckInFacetAbi",
     functionName: "checkIn",
   });
+
+  // ---------------------------------
+  // withdraw ERC721 from L2 to L1
+    const { withdrawERC721, step: withdrawERC721Step, isLoading: isWithdrawingERC721 } = useWithdrawERC721ToL1({
+      l1ChainId: 11155111,
+      l2ChainId: 5003,
+      l1RpcUrl: "https://1rpc.io/sepolia",
+      l2RpcUrl: "https://rpc.sepolia.mantle.xyz",
+    })
+  
+    const handleWithdrawERC721 = async () => {
+      try {
+        toast.info("Starting ERC721 withdrawal from L2 to L1...");
+        // @ts-ignore
+        const provider = (await (primaryWallet?.connector as any)?.getProvider?.()) || (typeof window !== 'undefined' ? (window as any).ethereum : undefined);
+        await withdrawERC721('0xD171f2a5c38c52D255091B5232e1e710EAD3CEde' as `0x${string}`, '0x5a87BD93ac3eD187AB5B86E4C55DA2E480165A16' as `0x${string}`, '1', { provider });
+        toast.success("Withdrawal complete!");
+      } catch (error: any) {
+        console.error("Withdrawal error:", error);
+        // Error toast already handled by the hook
+      }
+    };
 
   return (
     <Tabs defaultValue="details" className="w-full">
@@ -218,6 +242,13 @@ const Page = () => {
                     </div>
                   </DialogContent>
                 </Dialog>
+
+                 <Button
+                      onClick={handleWithdrawERC721}
+                      className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isWithdrawingERC721 ? `${withdrawERC721Step.message}...` : "Withdraw ERC721"}
+                    </Button>
               </div>
 
               {/* Map and QR Code Section */}

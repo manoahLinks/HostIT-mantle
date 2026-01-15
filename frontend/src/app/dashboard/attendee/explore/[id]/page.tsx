@@ -367,7 +367,7 @@ const Page = () => {
             </Dialog>
 
             {/* Bridge from L1 to L2 Button */}
-            {!isFree && (
+            {/* {!isFree && ( */}
               <Button
                 onClick={handleBridgeAndPurchase}
                 disabled={isBridging}
@@ -375,7 +375,7 @@ const Page = () => {
               >
                 {isBridging ? `${step.message}...` : "Purchase with MNT from L1"}
               </Button>
-            )}
+            {/* )} */}
 
             {/* Bridge Progress Indicator */}
             {isBridging && (
@@ -394,12 +394,12 @@ const Page = () => {
               {isWithdrawing ? `${withdrawStep.message}...` : "Purchase with MNT from L2"}
             </Button>
 
-            <Button
+            {/* <Button
               onClick={handleWithdrawERC721}
               className="text-sm sm:text-base h-12 2xl:h-14 px-6 2xl:px-8 font-semibold rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isWithdrawingERC721 ? `${withdrawERC721Step.message}...` : "Withdraw ERC721"}
-            </Button>
+            </Button> */}
           </div>
 
           {/* Map */}
