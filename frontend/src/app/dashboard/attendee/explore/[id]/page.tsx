@@ -99,11 +99,7 @@ const Page = () => {
 
   // Bridge and purchase handler Mnt l1 - l2
   const handleBridgeAndPurchase = async () => {
-    if (!feeEthStr || isFree) {
-      toast.error("Cannot bridge for free events");
-      return;
-    }
-
+   
     try {
       toast.info("Starting MNT bridge from L1 to L2...");
       // @ts-ignore
