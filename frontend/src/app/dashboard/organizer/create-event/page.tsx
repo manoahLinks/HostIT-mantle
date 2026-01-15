@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { useEventForm } from "@/hooks/useEventForm";
 import { useCreateEvent } from "@/hooks/useCreateEvent";
-import { getWalletClient } from "@/lib/chain";
 import { Upload, Plus, X } from "lucide-react";
 import Switch from "@/components/ui/switch";
 import dynamic from "next/dynamic";
@@ -96,26 +95,8 @@ const Page = () => {
 
         if (!activeWalletClient && primaryWallet) {
           try {
-            // Try to get provider from Dynamic
-            const connector = primaryWallet.connector as any;
-            const provider = connector?.getProvider ? await connector.getProvider() :
-              connector?.getWalletClient ? await connector.getWalletClient() : null; // Fallback to getWalletClient if getProvider missing? Mostly getProvider is what we want for pure provider.
-
-            // Actually, we have getWalletClient helper imported from "@/lib/chain"
-            // We should use that if we can get a provider.
-            if (provider) {
-              // If the provider is a client (viem), we can use it?
-              // Or if it's an EIP-1193 provider.
-
-              // Let's assume getWalletClient imported from lib/chain can handle it
-              const clientFromHelper = getWalletClient(provider);
-              if (clientFromHelper) {
-                activeWalletClient = clientFromHelper;
-              } else {
-                // Maybe provider IS the client??
-                activeWalletClient = provider;
-              }
-            }
+            // Get wallet client directly from Dynamic Labs primaryWallet
+            activeWalletClient = await (primaryWallet as any).getWalletClient();
           } catch (e) {
             console.error("Failed to get wallet client from dynamic", e);
           }
